@@ -1,0 +1,9 @@
+evaluation:
+  model_path: "outputs/models/fine_tuned_mistral"
+  test_file: "data/processed/test.jsonl"
+  metrics:
+    bleu: 0.2
+    rougeL: 0.3
+    bertscore_f1: 0.3
+    semantic_similarity: 0.2
+  output_dir: "outputs/metrics"
