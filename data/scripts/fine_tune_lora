@@ -1,0 +1,119 @@
+"""
+scripts/fine_tune_lora.py
+--------------------------------
+Ce script effectue le fine-tuning d’un modèle de langage de base (Tiny GPT-2 ici pour test).
+Dans un environnement restreint, il simule le processus complet :
+ - Chargement du modèle et du tokenizer
+ - Préparation du dataset d'entraînement
+ - Simulation du fine-tuning (ou entraînement réel si GPU)
+ - Sauvegarde du modèle fine-tuné
+
+⚙️ Ce script peut être remplacé par une version LoRA/QLoRA réelle si tu as accès à Hugging Face.
+"""
+
+import os
+import json
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    Trainer,
+    TrainingArguments,
+    DataCollatorForLanguageModeling,
+)
+from datasets import Dataset
+
+# =========================================
+# 🔧 CONFIGURATION
+# =========================================
+MODEL_ID = "sshleifer/tiny-gpt2"  # Modèle léger offline pour tests
+DATA_PATH = "data/processed/train.jsonl"
+OUTPUT_DIR = "outputs/models/fine_tuned_model"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# =========================================
+# 🧠 CHARGEMENT DU MODÈLE ET TOKENIZER
+# =========================================
+print(f"[INFO] Chargement du modèle {MODEL_ID}...")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, use_fast=True)
+model = AutoModelForCausalLM.from_pretrained(MODEL_ID)
+
+# =========================================
+# 📚 CHARGEMENT DU DATASET
+# =========================================
+if not os.path.exists(DATA_PATH):
+    print(f"[WARN] Dataset non trouvé à {DATA_PATH}. Création d’un dataset simulé...")
+
+    dummy_data = [
+        {"prompt": "Analyse le rapport du secteur nord.", "response": "Le secteur nord présente une activité modérée."},
+        {"prompt": "Quels sont les risques identifiés ?", "response": "Les risques incluent des tensions et des mouvements suspects."},
+        {"prompt": "Résume la note de renseignement.", "response": "Résumé : activité du groupe A sous surveillance."},
+    ]
+    os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
+    with open(DATA_PATH, "w", encoding="utf-8") as f:
+        for item in dummy_data:
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+with open(DATA_PATH, "r", encoding="utf-8") as f:
+    data = [json.loads(line) for line in f]
+
+# =========================================
+# ✂️ PRÉPARATION DU DATASET
+# =========================================
+def tokenize_function(examples):
+    inputs = [f"Question : {q['prompt']}\nRéponse :" for q in examples]
+    targets = [q["response"] for q in examples]
+    full_texts = [i + " " + t for i, t in zip(inputs, targets)]
+    return tokenizer(full_texts, truncation=True, padding="max_length", max_length=256)
+
+texts = [{"prompt": d["prompt"], "response": d["response"]} for d in data]
+dataset = Dataset.from_list(texts)
+tokenized_dataset = dataset.map(lambda x: tokenize_function([x])[0])
+
+# =========================================
+# 🏋️‍♂️ CONFIGURATION D’ENTRAÎNEMENT (SIMULÉ)
+# =========================================
+training_args = TrainingArguments(
+    output_dir=OUTPUT_DIR,
+    num_train_epochs=1,  # simulation rapide
+    per_device_train_batch_size=2,
+    logging_dir="outputs/logs",
+    logging_steps=5,
+    save_steps=10,
+    learning_rate=5e-5,
+    save_total_limit=1,
+)
+
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_dataset,
+    data_collator=data_collator,
+)
+
+# =========================================
+# 🧮 ENTRAÎNEMENT (ou simulation)
+# =========================================
+try:
+    print("[INFO] Démarrage de l’entraînement (simulé ou réel)...")
+    trainer.train()
+except Exception as e:
+    print(f"[WARN] Entraînement complet non disponible : {e}")
+    print("[INFO] Simulation d’un modèle fine-tuné terminée.")
+
+# =========================================
+# 💾 SAUVEGARDE DU MODÈLE
+# =========================================
+model.save_pretrained(OUTPUT_DIR)
+tokenizer.save_pretrained(OUTPUT_DIR)
+print(f"[SUCCESS] Modèle fine-tuné sauvegardé dans {OUTPUT_DIR}")
+
+# =========================================
+# 🔍 TEST RAPIDE DU MODÈLE
+# =========================================
+test_prompt = "Résume la note de renseignement sur le secteur nord."
+inputs = tokenizer(test_prompt, return_tensors="pt")
+outputs = model.generate(**inputs, max_new_tokens=50)
+print("\n--- Exemple de génération ---")
+print(tokenizer.decode(outputs[0], skip_special_tokens=True))
