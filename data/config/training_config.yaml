@@ -1,0 +1,21 @@
+model:
+  name: "mistralai/Mistral-7B-v0.3"
+  load_in_4bit: true
+  gradient_checkpointing: true
+  adapter_type: "qlora"
+
+training:
+  epochs: 3
+  batch_size: 4
+  lr: 2e-4
+  max_seq_length: 1024
+  warmup_steps: 50
+  save_dir: "outputs/models/fine_tuned_mistral"
+  log_steps: 20
+  eval_steps: 200
+
+data:
+  train_file: "data/processed/train.jsonl"
+  val_file: "data/processed/val.jsonl"
+  text_field: "prompt"
+  label_field: "response"
