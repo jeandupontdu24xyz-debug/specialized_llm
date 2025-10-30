@@ -1,0 +1,32 @@
+# --- Core Deep Learning ---
+torch
+transformers
+datasets
+accelerate
+bitsandbytes
+peft
+trl
+sentencepiece
+scipy
+numpy
+pandas
+tqdm
+huggingface_hub
+
+# --- Evaluation & Metrics ---
+evaluate
+scikit-learn
+sentence-transformers
+
+# --- Retrieval & RAG ---
+faiss-cpu
+langchain
+chromadb
+
+# --- Interface & Monitoring ---
+streamlit
+matplotlib
+wandb
+
+# --- Utilitaires ---
+pyyaml
