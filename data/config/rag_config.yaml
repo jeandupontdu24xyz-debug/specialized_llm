@@ -1,0 +1,12 @@
+retriever:
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  top_k: 5
+
+vector_db:
+  type: "faiss"   # ou "milvus" / "pinecone"
+  path: "outputs/vector_index.faiss"
+
+documents:
+  chunk_size: 512
+  chunk_overlap: 50
+  source_dir: "data/raw"
